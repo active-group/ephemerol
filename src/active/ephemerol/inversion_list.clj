@@ -257,6 +257,16 @@
 			      (inversion-list-max i-list)
 			      numbers)))
 
+(def inversion-list-xor
+  (binary->n-ary
+   (fn [i-list-1 i-list-2]
+     (inversion-list-union (inversion-list-intersection
+			    (inversion-list-complement i-list-1)
+			    i-list-2)
+			   (inversion-list-intersection
+			    i-list-1
+			    (inversion-list-complement i-list-2))))))
+
 (defn inversion-list-size
   [i-list]
   (let [ranges (inversion-list-range-array i-list)
@@ -282,6 +292,11 @@
 	  (inversion-list-max i-list-2))
        (java.util.Arrays/equals ^ints (inversion-list-range-array i-list-1)
                                 ^ints (inversion-list-range-array i-list-2))))
+
+(defn inversion-list<=?
+  [i-list-1 i-list-2]
+  (inversion-list=? i-list-1
+		    (inversion-list-intersection i-list-1 i-list-2)))
 
 ; bah, no nested loops in clojure
 (define-record-type NextFold
@@ -317,6 +332,18 @@
             (if (next-fold? res)
               (recur (next-fold-v res) (next-fold-i res))
               res)))))))
+
+;; FIXME: I'm sure we can do better ...
+
+(defn inversion-list-count
+  [pred i-list]
+  (inversion-list-fold-done? (fn [v count]
+			       (if (pred v)
+				   (+ 1 count)
+				   count))
+			     0
+			     (fn [v] false)
+			     i-list))
 
 ; Uses the same method as Olin's reference implementation for SRFI 14.
 
