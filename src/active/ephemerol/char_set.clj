@@ -1,16 +1,35 @@
 (ns active.ephemerol.char-set
-  (:require [active.clojure.record :refer :all]
-            [active.clojure.condition :refer (guard raise)]
+  (:require [active.clojure.condition :refer (guard raise)]
             [active.clojure.condition :as c]
             [active.ephemerol.inversion-list :refer :all]))
 
-(define-record-type CharSet
-  (make-char-set simple i-list)
-  char-set?
-  ;; byte vector for the Latin-1 part
-  [simple char-set-simple
-   ;; inversion list for the rest
-   i-list char-set-i-list])
+(declare char-set? char-set=? char-set-hash)
+
+(deftype CharSet [simple i-list]
+  Object
+  (equals
+    [this other]
+    (and (char-set? other)
+         (char-set=? this other)))
+  (hashCode
+    [this]
+    (char-set-hash this)))
+
+(defn char-set?
+  [thing]
+  (instance? CharSet thing))
+
+(defn char-set-simple
+  [^CharSet cs]
+  (.simple cs))
+
+(defn char-set-i-list
+  [^CharSet cs]
+  (.i-list cs))
+
+(defn make-char-set
+  [simple i-list]
+  (CharSet. simple i-list))
 
 (defn scalar-value
   [thing]
@@ -334,20 +353,20 @@
 					simple-cset-boundary (+ 1 0x10ffff))))
 
 ; binary version
-(defn char-set=-2
+(defn char-set=?-2
   [cs-1 cs-2]
   (and (simple-cset=? (char-set-simple cs-1) (char-set-simple cs-2))
        (inversion-list=? (char-set-i-list cs-1)
 			 (char-set-i-list cs-2))))
 ; n-ary version
-(defn char-set=
+(defn char-set=?
   [& css]
   (or (empty? css)
       (let [cs1  (first css)
 	    rst (rest css)]
 	(loop [rst rst]
 	  (or (empty? rst)
-              (and (char-set=-2 cs1 (first rst))
+              (and (char-set=?-2 cs1 (first rst))
                    (recur (rest rst))))))))
 
 ; binary

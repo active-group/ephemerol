@@ -10,12 +10,12 @@
   (is (not (char-set? 5)))
   (is (char-set? (char-set \a \e \i \o \u))))
 
-(deftest t-char-set=
-  (is (char-set=))
-  (is (char-set= (char-set)))
-  (is (char-set= (char-set \a \e \i \o \u)
+(deftest t-char-set=?
+  (is (char-set=?))
+  (is (char-set=? (char-set)))
+  (is (char-set=? (char-set \a \e \i \o \u)
                  (string->char-set "ioeauaiii")))
-  (is (not (char-set= (char-set \e \i \o \u)
+  (is (not (char-set=? (char-set \e \i \o \u)
                       (string->char-set "ioeauaiii")))))
 
 (deftest t-char-set<=
@@ -40,38 +40,38 @@
   (let [cs (atom (string->char-set "0123456789"))]
     (char-set-for-each (fn [c] (swap! cs char-set-delete c))
 		       (string->char-set "02468000"))
-    (is (char-set= (string->char-set "97531")
+    (is (char-set=? (string->char-set "97531")
                    @cs)))
 
   (let [cs (atom (string->char-set "0123456789"))]
     (char-set-for-each (fn [c] (swap! cs char-set-delete c))
 		       (string->char-set "02468"))
-    (is (not (char-set= (string->char-set "7531") @cs)))))
+    (is (not (char-set=? (string->char-set "7531") @cs)))))
 
 (deftest t-char-set
-  (is (char-set= (string->char-set "xy") (char-set \x \y)))
-  (is (not (char-set= (string->char-set "xy") (char-set \x \y \z)))))
+  (is (char-set=? (string->char-set "xy") (char-set \x \y)))
+  (is (not (char-set=? (string->char-set "xy") (char-set \x \y \z)))))
 
 (deftest t-coll->char-set
-  (is (char-set= (string->char-set "xy") (coll->char-set [\x \y])))
-  (is (not (char-set= (string->char-set "axy") (coll->char-set [\x \y])))))
+  (is (char-set=? (string->char-set "xy") (coll->char-set [\x \y])))
+  (is (not (char-set=? (string->char-set "axy") (coll->char-set [\x \y])))))
 
 (deftest t-char-set-filter
-  (is (char-set= (string->char-set "aeiou")
+  (is (char-set=? (string->char-set "aeiou")
                  (char-set-filter vowel? char-set:ascii)))
-  (is (not (char-set= (string->char-set "aeou")
+  (is (not (char-set=? (string->char-set "aeou")
                       (char-set-filter vowel? char-set:ascii)))))
 
 (deftest t-range->char-set
-  (is (char-set= (string->char-set "abcdef")
+  (is (char-set=? (string->char-set "abcdef")
                  (range->char-set 97 103)))
-  (is (not (char-set= (string->char-set "abcef")
+  (is (not (char-set=? (string->char-set "abcef")
                       (range->char-set 97 103)))))
 
 (deftest t-->char-set
-  (is (char-set= (->char-set \x) (->char-set "x")))
-  (is (char-set= (->char-set \x)  (->char-set (char-set \x))))
-  (is (not (char-set= (->char-set \x) (->char-set "y")))))
+  (is (char-set=? (->char-set \x) (->char-set "x")))
+  (is (char-set=? (->char-set \x)  (->char-set (char-set \x))))
+  (is (not (char-set=? (->char-set \x) (->char-set "y")))))
 
 (deftest t-char-set-size
   (is (= 10
@@ -102,39 +102,39 @@
   (is (not (char-set-any char-lower-case? (->char-set "ABCD")))))
 
 (deftest t-char-set-adjoin
-  (is (char-set= (->char-set "123xa")
+  (is (char-set=? (->char-set "123xa")
                  (char-set-adjoin (->char-set "123") \x \a)))
-  (is (not (char-set= (->char-set "123x")
+  (is (not (char-set=? (->char-set "123x")
                       (char-set-adjoin (->char-set "123") \x \a)))))
 
 (deftest t-char-set-delete
-  (is (char-set= (->char-set "13")
+  (is (char-set=? (->char-set "13")
                  (char-set-delete (->char-set "123") \2 \a \2)))
-  (is (not (char-set= (->char-set "13a")
+  (is (not (char-set=? (->char-set "13a")
                       (char-set-delete (->char-set "123") \2 \a \2)))))
 
 (deftest t-char-set-intersection
   (is
-   (char-set= (->char-set "abcdefABCDEF")
+   (char-set=? (->char-set "abcdefABCDEF")
               (char-set-intersection char-set:hex-digit (char-set-complement char-set:digit)))))
 
 (deftest t-char-set-union
   (is
-   (char-set= 
+   (char-set=? 
     (->char-set "abcdefABCDEFghijkl0123456789")
     (char-set-union char-set:hex-digit
                     (->char-set "abcdefghijkl")))))
 
 (deftest t-char-set-difference
   (is
-   (char-set=
+   (char-set=?
     (->char-set "ghijklmn")
     (char-set-difference (->char-set "abcdefghijklmn")
                          char-set:hex-digit))))
 
 (deftest t-char-set-xor
   (is
-   (char-set=
+   (char-set=?
    (->char-set "abcdefABCDEF")
    (char-set-xor (->char-set "0123456789")
 		 char-set:hex-digit))))
@@ -142,13 +142,13 @@
 (deftest t-char-set-diff+intersection
   (let [[d i] (char-set-diff+intersection char-set:hex-digit
                                           char-set:letter)]
-      (is (char-set= (->char-set "0123456789") d))
-      (is (char-set= (->char-set "abcdefABCDEF") i)))
+      (is (char-set=? (->char-set "0123456789") d))
+      (is (char-set=? (->char-set "abcdefABCDEF") i)))
   (let [[d i] (char-set-diff+intersection (char-set-union char-set:letter
                                                           char-set:digit)
                                           char-set:letter)]
-    (is (char-set= char-set:digit d))
-    (is (char-set= char-set:letter i))))
+    (is (char-set=? char-set:digit d))
+    (is (char-set=? char-set:letter i))))
 
 ; The following stuff was adapted from the suite Matthew Flatt wrote
 ; for PLT Scheme
@@ -211,7 +211,7 @@
   (is (= 92496 (char-set-size char-set:letter))))
 
 (deftest t-char-set:letter-2
-  (is (char-set= char-set:letter+digit 
+  (is (char-set=? char-set:letter+digit 
                  (char-set-union char-set:letter char-set:digit)))
   (is (not (char-set-every (fn [c] (char-set-contains? char-set:letter c)) char-set:letter+digit)))
   (is (not (char-set-every (fn [c] (char-set-contains? char-set:digit c)) char-set:letter+digit)))
@@ -225,14 +225,14 @@
 
 (deftest t-char-set:latin-1 
   (is
-   (char-set=
+   (char-set=?
     (char-set-intersection char-set:graphic char-set:latin-1)
     (char-set-intersection (char-set-union char-set:letter char-set:digit char-set:punctuation char-set:symbol)
                            char-set:latin-1))))
 
 (deftest t-char-set:printing
   (is
-   (char-set= char-set:printing
+   (char-set=? char-set:printing
               (char-set-union char-set:graphic char-set:whitespace))))
 
 (deftest t-char-set:whitespace
@@ -241,7 +241,7 @@
   (is (not (char-set-contains? char-set:whitespace \a))))
 
 (deftest t-char-set:iso-control
-  (is (char-set= char-set:iso-control 
+  (is (char-set=? char-set:iso-control 
                  (char-set-union (range->char-set 0x0000 0x0020)
 			      (range->char-set 0x007F 0x00A0)))))
 
@@ -262,11 +262,11 @@
 
 ;; General procedures ----------------------------------------
 
-(deftest t-char-set=-2
-  (is (char-set= char-set:letter char-set:letter char-set:letter))
-  (is (not (char-set= char-set:letter char-set:digit)))
-  (is (not (char-set= char-set:letter char-set:letter char-set:digit)))
-  (is (not (char-set= char-set:letter char-set:digit char-set:letter))))
+(deftest t-char-set=?-2
+  (is (char-set=? char-set:letter char-set:letter char-set:letter))
+  (is (not (char-set=? char-set:letter char-set:digit)))
+  (is (not (char-set=? char-set:letter char-set:letter char-set:digit)))
+  (is (not (char-set=? char-set:letter char-set:digit char-set:letter))))
 
 (deftest t-char-set<=-2
   (is (char-set<= char-set:graphic char-set:printing))
@@ -286,7 +286,7 @@
 
 (deftest t-char-set-for-each-2
   (is
-   (char-set= char-set:digit
+   (char-set=? char-set:digit
               (let [cs (atom char-set:empty)]
                 (char-set-for-each 
                  (fn [c]
@@ -298,41 +298,41 @@
 
 (deftest t-abc
   (let [abc (char-set \a \b \c)]
-    (is (char-set= abc
+    (is (char-set=? abc
                    (char-set \c \a \b)))
-    (is (char-set= abc (string->char-set "cba")))
-    (is (char-set= (char-set \b) (char-set-filter (fn [c] (= c (scalar-value \b))) abc)))
-    (is (char-set= abc (->char-set "abc")))
-    (is (char-set= abc (->char-set abc)))
-    (is (char-set= (char-set \a) (->char-set \a)))))
+    (is (char-set=? abc (string->char-set "cba")))
+    (is (char-set=? (char-set \b) (char-set-filter (fn [c] (= c (scalar-value \b))) abc)))
+    (is (char-set=? abc (->char-set "abc")))
+    (is (char-set=? abc (->char-set abc)))
+    (is (char-set=? (char-set \a) (->char-set \a)))))
 
 (deftest t-range->char-2
   (is
-   (char-set= (range->char-set 0 0x20000)
+   (char-set=? (range->char-set 0 0x20000)
               (char-set-union (range->char-set 0 0xD800)
                               (range->char-set 0xE000 0x20000))))
   (is
-   (char-set=
+   (char-set=?
     (range->char-set 0 0xD801)
     (range->char-set 0 0xD800)))
   (is
-   (char-set=
+   (char-set=?
     (range->char-set 0 0xDFFF)
     (range->char-set 0 0xD800)))
   (is
-   (char-set=
+   (char-set=?
     char-set:empty
     (range->char-set 0xD800 0xD810)))
   (is
-   (char-set=
+   (char-set=?
     (range->char-set 0xD810 0xE000)
     char-set:empty))
   (is
-   (char-set=
+   (char-set=?
     (range->char-set 0xE000 0xE001)
     (range->char-set 0xD810 0xE001)))
   (is
-   (char-set=
+   (char-set=?
     (char-set (char 0xD7FF) (char 0xE000))
     (range->char-set 0xD7FF 0xE001))))
 
@@ -347,7 +347,7 @@
                       char-set:digit))))
 
 (deftest t-coll->char-set-2
-  (is (char-set=
+  (is (char-set=?
        char-set:digit
        (coll->char-set (char-set->list char-set:digit)))))
 
