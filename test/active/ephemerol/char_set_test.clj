@@ -6,6 +6,8 @@
 
 (def vowel? (set (map scalar-value [\a \e \i \o \u])))
 
+
+
 (deftest t-char-set?
   (is (not (char-set? 5)))
   (is (char-set? (char-set \a \e \i \o \u))))
@@ -17,6 +19,12 @@
                  (string->char-set "ioeauaiii")))
   (is (not (char-set=? (char-set \e \i \o \u)
                       (string->char-set "ioeauaiii")))))
+
+(deftest t=
+  (is (= (char-set \a \e \i \o \u)
+         (string->char-set "ioeauaiii")))
+  (is (not (= (char-set \e \i \o \u)
+              (string->char-set "ioeauaiii")))))
 
 (deftest t-char-set<=
   (is (char-set<=))
