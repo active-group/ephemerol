@@ -24,62 +24,58 @@
    
 ;;; "Simple Csets"---we use mutable byte vectors for the Latin-1 part
 
-(def simple-cset-boundary 256)
+(def ^:private simple-cset-boundary 256)
 
-(defn simple-char?
+(defn- simple-char?
   [c]
   (< (scalar-value c) simple-cset-boundary))
 
-(defn make-empty-simple-cset
+(defn- make-empty-simple-cset
   []
   (boolean-array simple-cset-boundary false))
 
-(defn make-full-simple-cset
+(defn- make-full-simple-cset
   []
   (boolean-array simple-cset-boundary true))
 
-;; DELETEME
-(defn copy-simple-cset
+(defn- copy-simple-cset
   [^booleans s]
   (aclone s))
 
 ; don't mistake these for abstractions
-(defn simple-cset-code-not-member?
+(defn- simple-cset-code-not-member?
   [^booleans s i]
   (not (aget s i)))
 
-(defn simple-cset-code-member?
+(defn- simple-cset-code-member?
   [^booleans s i]
   (not (simple-cset-code-not-member? s i)))
 
-(defn simple-cset-ref
+(defn- simple-cset-ref
   [^booleans s i]
   (aget s i))
 
-;; DELETEME
-(defn simple-cset-set!
+(defn- simple-cset-set!
   [^booleans s i v]
   (aset-boolean s i v))
 
-;; DELETEME
-(defn simple-cset-remove-code!
+(defn- simple-cset-remove-code!
   [^booleans s i]
   (aset-boolean s i false))
 
-;; DELETEME
-(defn simple-cset-adjoin-code!
+(defn- simple-cset-adjoin-code!
   [^booleans s i]
   (aset-boolean s i true))
 
-(defn simple-cset-contains?
+(defn- simple-cset-contains?
   [s char]
   (simple-cset-code-member? s (scalar-value char)))
 
-(defn simple-cset=?
+(defn- simple-cset=?
   [^booleans s1 ^booleans s2]
   (java.util.Arrays/equals s1 s2))
 
-(defn simple-cset<=?
+(defn- simple-cset<=?
   [^booleans s1 ^booleans s2]
   (or (= s1 s2)
       (loop [i 0]
@@ -88,7 +84,7 @@
 	    (and (or (not (simple-cset-ref s1 i)) (simple-cset-ref s2 i))
 		 (recur (+ 1 i)))))))
 
-(defn simple-cset-size
+(defn- simple-cset-size
   [^booleans s]
   (loop [i 0
          size 0]
@@ -96,7 +92,7 @@
 	size
 	(recur (+ 1 i) (+ size (if (simple-cset-ref s i) 1 0))))))
 
-(defn simple-cset-count
+(defn- simple-cset-count
   [pred ^booleans s]
   (loop [i 0
          count 0]
@@ -113,34 +109,23 @@
     (set s (scalar-value c)))
   s)
 
-(defn simple-cset-modify
+(defn- simple-cset-modify
   [set ^booleans s chars]
   (simple-cset-modify! set (copy-simple-cset s) chars))
 
-(defn simple-cset-adjoin
+(defn- simple-cset-adjoin
   [^booleans s & chars]
   (simple-cset-modify simple-cset-adjoin-code! s chars))
-;; DELETEME
-(defn simple-cset-adjoin!
-  [^booleans s & chars]
-  (simple-cset-modify! simple-cset-adjoin-code! s chars))
 
-(defn simple-cset-delete 
+(defn- simple-cset-delete 
   [^booleans s & chars]
   (simple-cset-modify simple-cset-remove-code! s chars))
 
-(defn simple-cset-delete!
+(defn- simple-cset-delete!
   [^booleans s & chars]
   (simple-cset-modify! simple-cset-remove-code! s chars))
 
-;;; If we represented char sets as a bit set, we could do the following
-;;; trick to pick the lowest bit out of the set: 
-;;;   (count-bits (xor (- cset 1) cset))
-;;; (But first mask out the bits already scanned by the cursor first.)
-
-;; FIXME:
-
-(defn simple-cset-for-each
+(defn- simple-cset-for-each
   [proc ^booleans s]
   (loop [i 0]
     (if (< i simple-cset-boundary)
@@ -149,7 +134,7 @@
             (proc i))
 	  (recur (+ 1 i))))))
 
-(defn simple-cset-fold
+(defn- simple-cset-fold
   [kons knil s]
   (loop [i 0
          ans knil]
@@ -160,7 +145,7 @@
                ans
                (kons i ans))))))
 
-(defn simple-cset-every?
+(defn- simple-cset-every?
   [pred s]
   (loop [i 0]
     (cond
@@ -172,7 +157,7 @@
 
      :else false)))
 
-(defn simple-cset-any
+(defn- simple-cset-any
   [pred s]
   (loop [i 0]
     (cond
@@ -184,7 +169,7 @@
      
      :else (recur (+ 1 i)))))
 
-(defn range->simple-cset
+(defn- range->simple-cset
   [lower upper]
   (let [s (make-empty-simple-cset)]
     (loop [i lower]
@@ -198,23 +183,23 @@
 
 ; These do various "s[i] := s[i] op val" operations
 
-(defn simple-cset-invert-code!
+(defn- simple-cset-invert-code!
   [^booleans s i v]
   (simple-cset-set! s i (not v)))
 
-(defn simple-cset-and-code!
+(defn- simple-cset-and-code!
   [^booleans s i v]
   (when (not v)
     (simple-cset-remove-code! s i)))
-(defn simple-cset-or-code!
+(defn- simple-cset-or-code!
   [^booleans s i v]
   (when v
     (simple-cset-adjoin-code! s i)))
-(defn simple-cset-minus-code!
+(defn- simple-cset-minus-code!
   [^booleans s i v]
   (when v
     (simple-cset-remove-code! s i)))
-(defn simple-cset-xor-code!
+(defn- simple-cset-xor-code!
   [^booleans s i v]
   (when v
     (simple-cset-set! s i (not (simple-cset-ref s i)))))
@@ -224,7 +209,7 @@
 ;;; Apply P to each index and its char code in S: (P I VAL).
 ;;; Used by the set-algebra ops.
 
-(defn boolean-array-iter
+(defn- boolean-array-iter
   [p ^booleans s]
   (loop [i (- (alength s) 1)]
     (if (>= i 0)
@@ -232,18 +217,16 @@
 	  (p i (aget s i))
 	  (recur (- i 1))))))
 
-
-;; DELETEME
-(defn simple-cset-complement!
+(defn- simple-cset-complement!
   [^booleans s]
   (boolean-array-iter (fn [i v] (simple-cset-invert-code! s i v)) s)
   s)
 
-(defn simple-cset-complement
+(defn- simple-cset-complement
   [s]
   (simple-cset-complement! (copy-simple-cset s)))
 
-(defn simple-cset-op!
+(defn- simple-cset-op!
   [^booleans s simple-csets code-op!]
   (doseq [s2 simple-csets]
     (loop [i 0]
@@ -257,7 +240,7 @@
   [^booleans s1 & ss]
   (simple-cset-op! s1 ss simple-cset-or-code!))
 
-(defn simple-cset-union
+(defn- simple-cset-union
   [& ss]
   (if (empty? ss)
     (make-empty-simple-cset)
@@ -265,11 +248,11 @@
            (copy-simple-cset (first ss))
            (rest ss))))
 
-(defn simple-cset-intersection!
+(defn- simple-cset-intersection!
   [^booleans s1 & ss]
   (simple-cset-op! s1 ss simple-cset-and-code!))
 
-(defn simple-cset-intersection
+(defn- simple-cset-intersection
   [& ss]
   (if (empty? ss)
     (make-full-simple-cset)
@@ -277,21 +260,21 @@
            (aclone (first ss))
            (rest ss))))
 
-(defn simple-cset-difference!
+(defn- simple-cset-difference!
   [^booleans s1 & ss]
   (simple-cset-op! s1 ss simple-cset-minus-code!))
 
-(defn simple-cset-difference
+(defn- simple-cset-difference
   [^booleans s1 & ss]
   (if (empty? ss)
       s1
       (apply simple-cset-difference! (copy-simple-cset s1) ss)))
 
-(defn simple-cset-xor!
+(defn- simple-cset-xor!
   [s1 & ss]
   (simple-cset-op! s1 ss simple-cset-xor-code!))
 
-(defn simple-cset-xor
+(defn- simple-cset-xor
   [& ss]
   (if (empty? ss)
     (make-empty-simple-cset)
@@ -324,7 +307,7 @@
 ; each step in calculation. If this screws up any important properties
 ; of the hash function I'd like to hear about it. -Olin)
 
-(defn simple-cset-hash
+(defn- simple-cset-hash
   [^booleans s bound]
   ;; The mask that will cover BOUND-1:
   (let [mask (loop [i 0x10000]   ; Let's skip first 16 iterations, eh?
@@ -573,7 +556,7 @@
 
 ; Set algebra
 
-(def surrogate-complement-i-list
+(def ^:private surrogate-complement-i-list
   (inversion-list-complement
    (range->inversion-list simple-cset-boundary (+ 1 0x10ffff)
 			  0xd800 0xe000)))
