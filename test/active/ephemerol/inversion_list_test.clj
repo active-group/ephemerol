@@ -12,6 +12,18 @@
   (is (inversion-list-member? 500 (range->inversion-list 0 1000 500 1000)))
   (is (inversion-list-member? 1000 (range->inversion-list 0 1000 500 1000))))
 
+(deftest equality
+  (is (= (range->inversion-list 0 1000 5 10)
+         (range->inversion-list 0 1000 5 10)))
+  (is (not (= (range->inversion-list 0 1000 5 10)
+              (range->inversion-list 0 1001 5 10))))
+  (is (not (= (range->inversion-list 0 1000 5 10)
+              (range->inversion-list 1 1000 5 10))))
+  (is (not (= (range->inversion-list 0 1000 5 10)
+              (range->inversion-list 0 1000 6 10))))
+  (is (not (= (range->inversion-list 0 1000 5 10)
+              (range->inversion-list 0 1000 5 11)))))
+
 (deftest complement-1
   (is
    (inversion-list=?
@@ -124,5 +136,9 @@
   (is
    (not=
     (inversion-list-hash (ranges->inversion-list 0 1000 [5 10] [500 1000]) 1031)
-    (inversion-list-hash (ranges->inversion-list 0 1000 [5 10] [15 20] [500 1000]) 1031))))
+    (inversion-list-hash (ranges->inversion-list 0 1000 [5 10] [15 20] [500 1000]) 1031)))
+  (is
+   (not=
+    (hash (ranges->inversion-list 0 1000 [5 10] [500 1000]))
+    (hash (ranges->inversion-list 0 1000 [5 10] [15 20] [500 1000])))))
 

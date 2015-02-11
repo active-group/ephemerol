@@ -7,19 +7,42 @@
 ; It is based on similar code in Scheme 48
 ; Mike doesn't know what the original source is.
 
-(define-record-type InversionList
-  (make-inversion-list min max
-		       range-vector)
-  inversion-list?
-  ;; minimum element, needed for complement & difference
-  [min inversion-list-min
-   ;; maximum element, needed size
-   ;; we pretty much assume consistency for union / intersection for MIN and MAX
-   max inversion-list-max
-   ;; consecutive elements are paired to form ranges of the form
-   ;; [ (aget v i) (aget v (+ 1 i)) )
-   ;; (except the last one, possibly)
-   range-array inversion-list-range-array])
+(declare inversion-list=? inversion-list-hash inversion-list?)
+
+(deftype InversionList
+    ;; minimum element, needed for complement & difference
+    [min 
+     ;; maximum element, needed size
+     ;; we pretty much assume consistency for union / intersection for MIN and MAX
+     max
+     ;; consecutive elements are paired to form ranges of the form
+     ;; [ (aget v i) (aget v (+ 1 i)) )
+     ;; (except the last one, possibly)
+     range-array]
+  Object
+  (equals
+    [this other]
+    (and (inversion-list? other)
+         (inversion-list=? this other)))
+  (hashCode
+    [this]
+    (inversion-list-hash this Integer/MAX_VALUE)))
+
+(defn inversion-list?
+  [thing]
+  (instance? InversionList thing))
+
+(defn inversion-list-min
+  [^InversionList ilist]
+  (.min ilist))
+
+(defn inversion-list-max
+  [^InversionList ilist]
+  (.max ilist))
+
+(defn inversion-list-range-array
+  [^InversionList ilist]
+  (.range-array ilist))
 
 (defn make-empty-inversion-list
   [min max]
