@@ -291,12 +291,12 @@
         (recur sets (conj res splitter))))))
 
 ; turn a character set into its constituent indices from the partition
-; char-set list(char-set) -> list(int)
-(defn char-set->class-list
+; char-set list(char-set) -> set(int)
+(defn char-set->class-set
   [set part]
   (loop [part part
          i 0
-         res []]
+         res #{}]
     (if-let [part (seq part)]
       (if (char-set<= (first part) set)
         (recur (rest part) (+ 1 i)
@@ -313,7 +313,7 @@
       [(recurse [re]
          (cond
           (char-set? re)
-          (char-set->class-list re part)
+          (char-set->class-set re part)
 
           (concatenation? re)
           (make-concatenation (map recurse (concatenation-res re)))
