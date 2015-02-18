@@ -32,8 +32,8 @@
   (state_tunnel []))
 
 (deftype State 
-    [^:volatile-mutable spec 
-     ^:volatile-mutable transitions
+    [^:unsynchronized-mutable spec 
+     ^:unsynchronized-mutable transitions
      tunnel]
   IState
   (state_spec [_] spec)
