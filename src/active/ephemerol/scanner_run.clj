@@ -176,6 +176,13 @@
           (.appendCodePoint sb (first rlis))
           (recur (rest rlis)))))))
 
+(define-record-type ScanResult
+  (make-scan-result data input input-position)
+  scan-result?
+  [data scan-result-data ; holds the return in the end either scan-error or empty list
+   input scan-result-input              ; the rest of input
+   input-position scan-result-input-position])
+
 (defn make-scan-one
   [scanner]
 
@@ -255,7 +262,7 @@
                                 start-position
                                 last-input last-position)
                    ;; stuck, no action
-                   [stuck-scan-error start-input start-position])))
+                   (make-scan-result stuck-scan-error start-input start-position))))
 
 	     ;; eof
 	     last-action
@@ -270,7 +277,7 @@
 
              ;; eof, no action
 	     :else
-	      [eof-scan-error start-input start-position])))))))
+             (make-scan-result eof-scan-error start-input start-position)))))))) ;the end position
 
 (defn scan-to-list
   [scan-one input input-position]
@@ -279,21 +286,12 @@
          input-position input-position]
     (if (empty? input)
 	[(reverse rev-result) input input-position]
-        (let [[data input input-position] (scan-one input input-position)]
-          (cond
-           (not data)
-           [(reverse rev-result) input input-position]
-           (scan-error? data)
-           [data input input-position]
-           :else
-           (recur (cons data rev-result) input input-position))))))
-
-(define-record-type ScanResult
-  (make-scan-result data input input-position)
-  scan-result?
-  [data scan-result-data ; holds the return in the end either scan-error or empty list
-   input scan-result-input              ; the rest of input
-   input-position scan-result-input-position]) ;the end position
+        (let [scan-result (scan-one input input-position)]
+          (if-let [data (scan-result-data scan-result)]
+            (if (scan-error? data)
+              scan-result
+              (recur (cons data rev-result)
+                     (scan-result-input scan-result) (scan-result-input-position scan-result))))))))
 
 (defn string->list
   [^String str]

@@ -421,7 +421,7 @@
           ;; nil. If there are actions, take the first one defined.
           eof-action (if (empty? eof-?action)
                         `(fn [~'lexeme ~'start-position ~'last-input ~'last-position]
-                           [nil ~'last-input ~'last-position])
+                           (active.ephemerol.scanner-run/make-scan-result nil ~'last-input ~'last-position))
                         (first eof-?action))
           nspec (strip-eof-action spec)]
       (let [[maton part bot-state?] (compute-automaton nspec)

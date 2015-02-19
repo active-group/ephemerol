@@ -35,6 +35,11 @@
     (is (= -1 (compact-partition-index indices encodings 8 \0)))
     (is (= -1 (compact-partition-index indices encodings 8 \c)))))
 
+(defn eval-scanner
+  [scanner]
+  (binding [*ns* (find-ns 'active.ephemerol.scanner-test)]
+    (eval (scanner->expression scanner))))
+
 ; running example from Grosch's paper
 
 (def grosch-scanner-spec
@@ -42,43 +47,46 @@
    ((/ char-set:letter
        (* (or char-set:letter char-set:digit)))
     (fn [lexeme position input input-position]
-      [[:ident-symbol lexeme]
-       input input-position]))
+      (make-scan-result [:ident-symbol lexeme]
+                        input input-position)))
    ((+ char-set:digit)
     (fn [lexeme position input input-position]
-      [[:decimal-symbol (Integer/parseInt lexeme)]
-       input input-position]))
+      (make-scan-result [:decimal-symbol (Integer/parseInt lexeme)]
+                        input input-position)))
    ((/ (+ (char-set \0 \1 \2 \3 \4 \5 \6 \7))
        \Q)
     (fn [lexeme position input input-position]
-      [[:octal-symbol
-        (Integer/parseInt
-         (.substring lexeme 0 (- (count lexeme) 1))
-         8)]
-       input input-position]))
+      (make-scan-result [:octal-symbol
+                         (Integer/parseInt
+                          (.substring lexeme 0 (- (count lexeme) 1))
+                          8)]
+                        input input-position)))
    ("BEGIN"
     (fn [lexeme position input input-position]
-      [[:begin-symbol nil]
-       input input-position]))
+      (make-scan-result [:begin-symbol nil]
+                        input input-position)))
    ("END"
     (fn [lexeme position input input-position]
-      [[:end-symbol nil]
-       input input-position]))
+      (make-scan-result [:end-symbol nil]
+                        input input-position)))
    (":="
     (fn [lexeme position input input-position]
-      [[:assign-symbol nil]
-       input input-position]))))
+      (make-scan-result [:assign-symbol nil]
+                        input input-position)))))
 
 (def grosch-scanner (compute-scanner grosch-scanner-spec))
 
-(def grosch-scan-one (make-scan-one (eval (scanner->expression grosch-scanner))))
+(def grosch-scan-one (make-scan-one (eval-scanner grosch-scanner)))
 
 (deftest grosch-one
   
   (let [check-one
         (fn [input enc rest row col]
-          (let [[the-enc the-rest the-pos] (grosch-scan-one (string->list input)
-                                                            (make-position 1 0))]
+          (let [scan-result (grosch-scan-one (string->list input)
+                                             (make-position 1 0))
+                the-enc (scan-result-data scan-result)
+                the-rest (scan-result-input scan-result)
+                the-pos (scan-result-input-position scan-result)]
             (is (= enc the-enc))
             (is (= the-rest (string->list rest)))
             (is (= the-pos (make-position row col)))))]
@@ -95,28 +103,30 @@
   (scanner-spec
    ("A"
     (fn [lexeme position input input-position]
-      [[:a nil]
-       input input-position]))
+      (make-scan-result [:a nil]
+                        input input-position)))
    ("ARF"
     (fn [lexeme position input input-position]
-      [[:arf nil]
-       input input-position]))
+      (make-scan-result [:arf nil]
+                        input input-position)))
    ("ARFL"
     (fn [lexeme position input input-position]
-      [[:arfl nil]
-       input input-position]))
+      (make-scan-result [:arfl nil]
+                        input input-position)))
    ((/ (+ char-set:letter))
     (fn [lexeme position input input-position]
-      [[:ident lexeme]
-       input input-position]))))
+      (make-scan-result [:ident lexeme]
+                        input input-position)))))
 
 (deftest test-1
   (let [scanner (compute-scanner test-scanner-spec)
-        scan-one (make-scan-one (eval (scanner->expression scanner)))
+        scan-one (make-scan-one (eval-scanner scanner))
         check-one
         (fn [input enc]
-          (let [[the-enc the-rest the-pos] (scan-one (string->list input)
-                                                     (make-position 1 0))]
+          (let [scan-result (scan-one (string->list input) (make-position 1 0))
+                the-enc (scan-result-data scan-result)
+                the-rest (scan-result-input scan-result)
+                the-pos (scan-result-input-position scan-result)]
             (is (= enc the-enc))))]
 
     (check-one "A" [:a nil])
@@ -131,18 +141,18 @@
   (scanner-spec
    ((% "A")
     (fn [lexeme position input input-position]
-      [:%a input input-position]))
+      (make-scan-result :%a input input-position)))
    ("A"
     (fn [lexeme position input input-position]
-      [:a input input-position]))
+      (make-scan-result :a input input-position)))
    (char-set:whitespace 
     (fn [lexeme position input input-position]
-      [:whitespace
-       input input-position]))))
+      (make-scan-result :whitespace
+                        input input-position)))))
 
 (deftest bol-1
   (let [scanner (compute-scanner bol-scanner-spec)
-        scan-one (make-scan-one (eval (scanner->expression scanner)))
+        scan-one (make-scan-one (eval-scanner scanner))
         check-one
         (fn [input enc]
           (let [[output input input-position]
@@ -156,28 +166,28 @@
   (scanner-spec
    (($ (% "A"))
     (fn [lexeme position input input-position]
-      [:$%a
-       input input-position]))
+      (make-scan-result :$%a
+                        input input-position)))
    ((% "A")
     (fn [lexeme position input input-position]
-      [:%a
-       input input-position]))
+      (make-scan-result :%a
+                        input input-position)))
    (($ "A")
     (fn [lexeme position input input-position]
-      [:$a
-       input input-position]))
+      (make-scan-result :$a
+                        input input-position)))
    ("A"
     (fn [lexeme position input input-position]
-      [:a
-       input input-position]))
+      (make-scan-result :a
+                        input input-position)))
    (char-set:whitespace 
     (fn [lexeme position input input-position]
-      [:whitespace
-       input input-position]))))
+      (make-scan-result :whitespace
+                        input input-position)))))
 
 (deftest eol-1
   (let [scanner (compute-scanner eol-scanner-spec)
-        scan-one (make-scan-one (eval (scanner->expression scanner)))
+        scan-one (make-scan-one (eval-scanner scanner))
         check-one
         (fn [input enc]
           (let [[output input input-position]
@@ -191,32 +201,33 @@
   (scanner-spec
    ("A"
     (fn [lexeme position input input-position]
-      [[:a nil]
-       input input-position]))
+      (make-scan-result [:a nil]
+                        input input-position)))
    ("ARF"
     (fn [lexeme position input input-position]
-      [[:arf nil]
-       input input-position]))
+      (make-scan-result [:arf nil]
+                        input input-position)))
    ("ARFL"
     (fn [lexeme position input input-position]
-      [[:arfl nil]
-       input input-position]))
+      (make-scan-result [:arfl nil]
+                        input input-position)))
    ((/ (+ char-set:letter))
     (fn [lexeme position input input-position]
-      [[:ident lexeme]
-       input input-position]))
+      (make-scan-result [:ident lexeme]
+                        input input-position)))
    (<<eof>>
     (fn [lexeme position input input-position]
-      [[:eof lexeme]
-       input input-position]))))
+      (make-scan-result [:eof lexeme]
+                        input input-position)))))
 	 	
 
 (deftest eof-test-1
   (let [scanner (compute-scanner eof-test-scanner-spec)
-        scan-one (make-scan-one (eval (scanner->expression scanner)))
+        scan-one (make-scan-one (eval-scanner scanner))
         check-one
         (fn [input enc]
-          (let [[the-enc the-rest the-pos] (scan-one (string->list input) (make-position 1 0))]
+          (let [scan-result (scan-one (string->list input) (make-position 1 0))
+                the-enc (scan-result-data scan-result)]
             (is (= enc the-enc))))]
 
       (check-one "A" [:a nil])
