@@ -3,7 +3,7 @@
             [active.ephemerol.char-set :refer :all]
             [active.ephemerol.scanner-run :refer :all]
             [active.ephemerol.compact-table :refer :all])
-  (:import [java.util ArrayList]))
+  (:import [java.util Collection ArrayList]))
 
 ; Automaton & scanner generation
 
@@ -159,7 +159,7 @@
   (set-state-transitions! state (assoc (state-transitions state) for to)))
 
 (defn compute-ambiguous
-  [maton]
+  [^ArrayList maton]
   (let [size (.size maton)
         pred-counts (int-array size 0)]
     (loop [i 0]
@@ -194,7 +194,7 @@
         to-do (if after-bot
                 [initial after-bot]
                 [initial])
-        maton (ArrayList. to-do)]
+        maton (ArrayList. ^Collection to-do)]
     ;; compute regular DFA by exhausting to-do
     (loop [to-do (seq to-do)]
       (if (empty? to-do)
@@ -233,7 +233,7 @@
 			 (state-spec state))))
 
 (defn extend-path!
-  [maton state sq p]
+  [^ArrayList maton state sq p]
   (loop [state state
          sq (seq sq)]
     (if (empty? sq)
@@ -247,7 +247,7 @@
 
 ; add a rule with a constant regexp to the tunnel automaton; see Grosch's paper
 (defn add-constant-rule!
-  [maton ambiguous? p]
+  [^ArrayList maton ambiguous? p]
 
   (loop [state (.get maton 0)
          sq (seq (constant-regexp->list (first p)))]
@@ -286,7 +286,7 @@
 (declare final-state-action)
 
 (defn write-automaton-dot
-  [maton filename]
+  [^ArrayList maton ^String filename]
   (binding [*out* (java.io.FileWriter. filename)]
     (println "digraph M {")
     (let [size (.size maton)]
@@ -351,7 +351,7 @@
 ; or a :eol-action record
 
 (defn automaton->table
-  [maton part]
+  [^ArrayList maton part]
   (let [part-count (count part)
         state-count (.size maton)
         states (int-array (* state-count (+ part-count 1)) -1) ; + 1 for tunnel

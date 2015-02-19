@@ -276,7 +276,7 @@
   (if (empty? ss)
     (make-full-simple-cset)
     (apply simple-cset-intersection!
-           (aclone (first ss))
+           (aclone ^booleans (first ss))
            (rest ss))))
 
 (defn- simple-cset-difference!

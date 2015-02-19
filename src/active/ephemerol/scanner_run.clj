@@ -14,8 +14,9 @@
   (equals
     [this other]
     (and (instance? Position other)
-         (= row (.position_row other))
-         (= column (.position_column other))))
+         (let [^Position other-pos other]
+           (= row (.position_row other-pos))
+           (= column (.position_column other-pos)))))
   (hashCode
     [this]
     (+ row column))
@@ -59,7 +60,7 @@
 (def ^:private tab (int \tab))
 
 (defn update-position!
-  [pos ch]
+  [pos ^long ch]
   (case ch
     10 ; linefeed
     (do
@@ -112,7 +113,7 @@
      (assoc action->name action new-name)]))
 
 (defn- fill-final-expression
-  [final final-name]
+  [^objects final final-name]
   (let [size (count final)]
     (loop [bindings []
            action->name {}
@@ -173,7 +174,7 @@
           (.reverse sb)
           (.toString sb))
         (do
-          (.appendCodePoint sb (first rlis))
+          (.appendCodePoint sb ^int (first rlis))
           (recur (rest rlis)))))))
 
 (define-record-type ScanResult
@@ -186,13 +187,13 @@
 (defn make-scan-one
   [scanner]
 
-  (let [states (scanner-states scanner)
+  (let [^ints states (scanner-states scanner)
 	bot-state? (scanner-bot-state? scanner)
-	final (scanner-final scanner)
+	^objects final (scanner-final scanner)
 	partition-size (scanner-partition-size scanner)
 	bits (scanner-partition-bits scanner)
-	indices (scanner-indices scanner)
-	encodings (scanner-encodings scanner)
+	^ints indices (scanner-indices scanner)
+	^ints encodings (scanner-encodings scanner)
 	eof-action (scanner-eof-action scanner)]
 
     (let [mask (- (bit-shift-left 1 bits) 1)
@@ -205,14 +206,14 @@
           state-next (fn [state-index sc]
                        (let [class (scalar-value->class sc)]
                          (if (= class -1)
-                           nil
+                           -1
                            (loop [state-index state-index]
                              (let [base (* state-index state-size)
                                    next-index (aget states (+ base class))]
                                (if (= next-index -1)
                                  (let [tunnel-index (aget states (+ base partition-size))]
                                    (if (= tunnel-index -1)
-                                     nil
+                                     -1
                                      (recur tunnel-index)))
                                  next-index))))))]
 
@@ -237,32 +238,34 @@
              (let [c (first input)
                    input (rest input)]
                (update-position! position c)
-               (if-let [new-state (state-next state c)]
-                 ;; successful transition
-                 (let [rev-lexeme (cons c rev-lexeme)]
-                   (if-let [action (aget final new-state)]
-                     ;; final state
-                     (if (eol-action? action) ; EOL action
-                       (recur new-state input rev-lexeme 
-                              (if (or (empty? input)
-                                      (= linefeed (first input)))
-                                (eol-action-at-eol action)
-                                (eol-action-vanilla action))
-                              rev-lexeme
-                              input (copy-position position))
-                       (recur new-state input rev-lexeme action rev-lexeme
-                              input (copy-position position)))
-                     ;; non-final state
-                     (recur new-state input rev-lexeme
-                            last-action last-rev-lexeme last-input last-position)))
-                 (if last-action
-                    
-                   ;; stuck
-                   (last-action (reverse-list->string last-rev-lexeme)
+               (let [new-state (long (state-next state c))]
+                 (cond
+                  (not= new-state -1)
+                  ;; successful transition
+                  (let [rev-lexeme (cons c rev-lexeme)]
+                    (if-let [action (aget final new-state)]
+                      ;; final state
+                      (if (eol-action? action) ; EOL action
+                        (recur new-state input rev-lexeme 
+                               (if (or (empty? input)
+                                       (= linefeed (first input)))
+                                 (eol-action-at-eol action)
+                                 (eol-action-vanilla action))
+                               rev-lexeme
+                               input (copy-position position))
+                        (recur new-state input rev-lexeme action rev-lexeme
+                               input (copy-position position)))
+                      ;; non-final state
+                      (recur new-state input rev-lexeme
+                             last-action last-rev-lexeme last-input last-position)))
+                  last-action
+                  ;; stuck
+                  (last-action (reverse-list->string last-rev-lexeme)
                                 start-position
                                 last-input last-position)
-                   ;; stuck, no action
-                   (make-scan-result stuck-scan-error start-input start-position))))
+                  :else
+                  ;; stuck, no action
+                  (make-scan-result stuck-scan-error start-input start-position))))
 
 	     ;; eof
 	     last-action

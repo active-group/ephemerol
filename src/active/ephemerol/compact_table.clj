@@ -84,7 +84,7 @@
               (let [[reverse-values offset] (compact-block block reverse-values)]
                 (recur reverse-values
                        (cons (+ last-index offset) reverse-indices)
-                       (+ last-index offset)
+                       (long (unchecked-add last-index offset))
                        bingo-block-set)))))))))
 
 ; List utilities

@@ -41,7 +41,7 @@
   (.max ilist))
 
 (defn inversion-list-range-array
-  [^InversionList ilist]
+  ^ints [^InversionList ilist]
   (.range-array ilist))
 
 (defn make-empty-inversion-list
@@ -139,8 +139,12 @@
                 (if (or (< el-1 el-2)
                         (and (= el-1 el-2)
                              (process-first? index-1)))
-                  [index-1 el-1 (+ 1 index-1) index-2]
-                  [index-2 el-2 index-1 (+ 1 index-2)])]
+                  [index-1 el-1 (unchecked-inc index-1) index-2]
+                  [index-2 el-2 index-1 (unchecked-inc index-2)])
+                
+                ;; put type hints where Clojure can see them
+                index-1 (long index-1)
+                index-2 (long index-2)]
 
             (if (even? index)
               (if (= write-increment-count count)
@@ -292,7 +296,7 @@
 
 (defn inversion-list-size
   [i-list]
-  (let [ranges (inversion-list-range-array i-list)
+  (let [^ints ranges (inversion-list-range-array i-list)
         size (alength ranges)]
     (loop [index 0
            count 0]
@@ -302,7 +306,7 @@
        (+ count (- (inversion-list-max i-list)
                    (aget ranges index)))
        :else
-       (recur (+ 2 index)
+       (recur (unchecked-add 2 index)
 	      (+ count
 		 (- (aget ranges (+ 1 index))
 		    (aget ranges index))))))))
@@ -332,7 +336,7 @@
 ; returns #t
 (defn inversion-list-fold-done? 
   [kons knil done? i-list]
-  (let [ranges (inversion-list-range-array i-list)
+  (let [^ints ranges (inversion-list-range-array i-list)
         size (alength ranges)]
     (loop [v knil
            i 0]
@@ -351,9 +355,9 @@
                     (let [v (kons n v)]
                       (if (done? v)
                         v
-                        (recur v (+ 1 n))))))]
+                        (recur v (unchecked-inc n))))))]
             (if (next-fold? res)
-              (recur (next-fold-v res) (next-fold-i res))
+              (recur (next-fold-v res) (long (next-fold-i res)))
               res)))))))
 
 ;; FIXME: I'm sure we can do better ...
