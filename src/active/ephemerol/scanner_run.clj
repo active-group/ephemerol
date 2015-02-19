@@ -307,13 +307,14 @@
          input input
          input-position input-position]
     (if (empty? input)
-	[(reverse rev-result) input input-position]
-        (let [scan-result (scan-one input input-position)]
-          (if-let [data (scan-result-data scan-result)]
-            (if (scan-error? data)
-              scan-result
-              (recur (cons data rev-result)
-                     (scan-result-input scan-result) (scan-result-input-position scan-result))))))))
+      [(reverse rev-result) input input-position]
+      (let [scan-result (scan-one input input-position)]
+        (if-let [data (scan-result-data scan-result)]
+          (if (scan-error? data)
+            [data (scan-result-input scan-result) (scan-result-input-position scan-result)]
+            (recur (cons data rev-result)
+                   (scan-result-input scan-result) (scan-result-input-position scan-result)))
+          [(reverse rev-result) input input-position])))))
 
 (defn string->list
   [^String str]
