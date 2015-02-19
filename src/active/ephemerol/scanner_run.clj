@@ -165,6 +165,24 @@
        ~(fill-final-expression final 'final)
        ~'scanner)))
 
+(defn write-scanner-ns
+  [scanner ns-name reqs writer]
+  (binding [*out* writer]
+    (pr `(ns ~ns-name
+           (:require [active.ephemerol.scanner-run :refer :all]
+                     ~@reqs)))
+    (println)
+    (println `(declare ~'scanner ~'scan-one))
+    (pr `(def ~'scanner ~(scanner->expression scanner)))
+    (println)
+    (pr `(def ~'scan-one (make-scan-one ~'scanner)))
+    (println)
+    (pr `(defn ~'scan
+           [input#]
+           (scan-to-list ~'scan-one input# (make-position 1 0))))
+    (println)
+    (flush)))
+
 (defn reverse-list->string
   [rlis]
   (let [sb (StringBuilder. (count rlis))]
@@ -261,8 +279,8 @@
                   last-action
                   ;; stuck
                   (last-action (reverse-list->string last-rev-lexeme)
-                                start-position
-                                last-input last-position)
+                               start-position
+                               last-input last-position)
                   :else
                   ;; stuck, no action
                   (make-scan-result stuck-scan-error start-input start-position))))
