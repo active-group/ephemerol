@@ -1,5 +1,6 @@
 (ns active.ephemerol.scanner-run
-  (:require [active.clojure.record :refer :all]))
+  (:require [active.clojure.record :refer :all])
+  (:import [java.io Reader IOException]))
 
 (definterface IState
   (position_row [])
@@ -324,3 +325,28 @@
         (recur (+ i (Character/charCount sv))
                (cons sv lis)))
       (reverse lis)))))
+
+(defn read-scalar-value
+  ^long [^Reader r]
+  (let [high (.read r)]
+    (if (= -1 high)
+     -1
+     (let [highc (char high)]
+       (if (Character/isHighSurrogate highc)
+         (let [next (.read r)]
+           (when (= -1 next)
+             (throw (IOException. "malformed Unicode encoding")))
+           (let [lowc (char next)]
+             (when-not (Character/isLowSurrogate lowc)
+               (throw (IOException. "malformed Unicode encoding")))
+             (Character/toCodePoint highc lowc)))
+         high)))))
+
+
+(defn reader->list
+  [^Reader r]
+  (loop [rev '()]
+    (let [sc (read-scalar-value r)]
+      (if (= sc -1)
+        (reverse rev)
+        (recur (cons sc rev))))))
