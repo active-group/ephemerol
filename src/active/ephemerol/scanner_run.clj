@@ -167,22 +167,23 @@
        ~'scanner)))
 
 (defn write-scanner-ns
-  [scanner ns-name reqs writer]
-  (binding [*out* writer]
-    (pr `(ns ~ns-name
-           (:require [active.ephemerol.scanner-run :refer :all]
-                     ~@reqs)))
-    (println)
-    (println `(declare ~'scanner ~'scan-one))
-    (pr `(def ~'scanner ~(scanner->expression scanner)))
-    (println)
-    (pr `(def ~'scan-one (make-scan-one ~'scanner)))
-    (println)
-    (pr `(defn ~'scan
-           [input#]
-           (scan-to-list ~'scan-one input# (make-position 1 0))))
-    (println)
-    (flush)))
+  [scanner ns-name reqs writer-arg]
+  (with-open [writer (clojure.java.io/writer writer-arg)]
+    (binding [*out* writer]
+      (pr `(ns ~ns-name
+             (:require [active.ephemerol.scanner-run :refer :all]
+                       ~@reqs)))
+      (println)
+      (println `(declare ~'scanner ~'scan-one))
+      (pr `(def ~'scanner ~(scanner->expression scanner)))
+      (println)
+      (pr `(def ~'scan-one (make-scan-one ~'scanner)))
+      (println)
+      (pr `(defn ~'scan
+             [x#]
+             (with-open [r# (clojure.java.io/reader x#)]
+               (scan-to-list ~'scan-one (reader->list r#) (make-position 1 0)))))
+      (println))))
 
 (defn reverse-list->string
   [rlis]
