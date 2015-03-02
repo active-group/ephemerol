@@ -252,18 +252,18 @@
                                  next-index))))))]
 
       (fn [start-input start-position]
-	(let [position (copy-position start-position)] ; updated
+	(let [position (copy-position start-position) ; updated
+              ;; lexeme read so far
+              lexeme-builder (StringBuilder.)]
 	  (loop [state (if (and bot-state?
                                 (zero? (position-column position)))
                          1
                          0)
                  ;; to be prepended to port
                  input start-input
-                 ;; lexeme read so far
-                 rev-lexeme '()
                  ;; these are the values for the last final state
                  last-action nil
-                 last-rev-lexeme '()
+                 last-lexeme ""
                  last-input '()
                  last-position nil]
 	    ;; (write (list 'loop state input (reverse rev-lexeme) last-action (reverse last-rev-lexeme) last-input)) (newline)
@@ -276,25 +276,27 @@
                  (cond
                   (not= new-state -1)
                   ;; successful transition
-                  (let [rev-lexeme (cons c rev-lexeme)]
+                  (do
+                    (.appendCodePoint lexeme-builder c)
                     (if-let [action (aget final new-state)]
                       ;; final state
                       (if (eol-action? action) ; EOL action
-                        (recur new-state input rev-lexeme 
+                        (recur new-state input
                                (if (or (empty? input)
                                        (= linefeed (first input)))
                                  (eol-action-at-eol action)
                                  (eol-action-vanilla action))
-                               rev-lexeme
+                               (.toString lexeme-builder)
                                input (copy-position position))
-                        (recur new-state input rev-lexeme action rev-lexeme
+                        (recur new-state input action (.toString lexeme-builder)
                                input (copy-position position)))
                       ;; non-final state
-                      (recur new-state input rev-lexeme
-                             last-action last-rev-lexeme last-input last-position)))
+                      (recur new-state input
+                             last-action last-lexeme last-input last-position)))
+
                   last-action
                   ;; stuck
-                  (last-action (reverse-list->string last-rev-lexeme)
+                  (last-action last-lexeme
                                start-position
                                last-input last-position)
                   :else
@@ -303,12 +305,12 @@
 
 	     ;; eof
 	     last-action
-             (last-action (reverse-list->string last-rev-lexeme)
+             (last-action last-lexeme
                           start-position
                           last-input last-position)
 
 	     ;; eof at the beginning
-	     (empty? rev-lexeme)
+	     (zero? (.length lexeme-builder))
              ;; call either the default or user specified eof handler.
              (eof-action "" start-position '() last-position)
 
