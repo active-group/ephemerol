@@ -147,8 +147,21 @@
 
 (defn- encode-int-array
   [ar]
-  ;; work around "method size too large"
-  `(int-array (read-string ~(str (vec ar)))))
+  ;; work around "method size too large" and string literals < 64k
+  (loop [s (str (vec ar))
+         ss '()]
+    (cond
+     (= "" s)
+     (if (= (count ss) 1)
+       `(int-array (read-string ~(first ss)))
+       `(int-array (read-string (string/join [~@(reverse ss)]))))
+     
+     (> (count s) 65535)
+     (recur (subs s 65535)
+            (cons (subs s 0 65535) ss))
+
+     :else
+     (recur "" (cons s ss)))))
 
 (defn scanner->expression
   [scanner]
@@ -171,7 +184,8 @@
   (with-open [writer (clojure.java.io/writer writer-arg)]
     (binding [*out* writer]
       (pr `(ns ~ns-name
-             (:require [active.ephemerol.scanner-run :refer :all]
+             (:require [clojure.string :as ~'string]
+                       [active.ephemerol.scanner-run :refer :all]
                        ~@reqs)))
       (println)
       (println `(declare ~'scanner ~'scan-one))
