@@ -269,7 +269,7 @@
 	    ;; (write (list 'loop state input (reverse rev-lexeme) last-action (reverse last-rev-lexeme) last-input)) (newline)
 	    (cond
              (not-empty input)
-             (let [c (first input)
+             (let [c (int (first input))
                    input (rest input)]
                (update-position! position c)
                (let [new-state (long (state-next state c))]
