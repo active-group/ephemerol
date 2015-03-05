@@ -320,29 +320,29 @@
 
 (defn scan-to-list
   [scan-one input input-position]
-  (loop [rev-result '()
+  (loop [v (transient [])
          input input
          input-position input-position]
     (if (empty? input)
-      [(reverse rev-result) input input-position]
+      [(persistent! v) input input-position]
       (let [scan-result (scan-one input input-position)]
         (if-let [data (scan-result-data scan-result)]
           (if (scan-error? data)
             [data (scan-result-input scan-result) (scan-result-input-position scan-result)]
-            (recur (cons data rev-result)
+            (recur (conj! v data)
                    (scan-result-input scan-result) (scan-result-input-position scan-result)))
-          [(reverse rev-result) input input-position])))))
+          [(persistent! v) input input-position])))))
 
 (defn string->list
   [^String str]
   (let [sz (.length str)]
-  (loop [i 0
-         lis '()]
-    (if (< i sz)
-      (let [sv (.codePointAt str i)]
-        (recur (+ i (Character/charCount sv))
-               (cons sv lis)))
-      (reverse lis)))))
+    (loop [i 0
+           v (transient [])]
+      (if (< i sz)
+        (let [sv (.codePointAt str i)]
+          (recur (+ i (Character/charCount sv))
+                 (conj! v sv)))
+        (persistent! v)))))
 
 (defn read-scalar-value
   ^long [^Reader r]
@@ -363,8 +363,8 @@
 
 (defn reader->list
   [^Reader r]
-  (loop [rev '()]
+  (loop [v (transient [])]
     (let [sc (read-scalar-value r)]
       (if (= sc -1)
-        (reverse rev)
-        (recur (cons sc rev))))))
+        (persistent! v)
+        (recur (conj! v sc))))))
