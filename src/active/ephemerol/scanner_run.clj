@@ -182,7 +182,10 @@
 (defn write-scanner-ns
   [scanner ns-name reqs writer-arg]
   (with-open [writer (clojure.java.io/writer writer-arg)]
-    (binding [*out* writer]
+    (binding [*out* writer
+              *print-meta* true
+              *print-length* nil
+              *print-level* nil]
       (pr `(ns ~ns-name
              (:require [clojure.string :as ~'string]
                        [active.ephemerol.scanner-run :refer :all]
