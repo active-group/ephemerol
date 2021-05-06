@@ -47,6 +47,13 @@
   [^Position p c]
   (.set_position_column p c))
 
+(defmethod print-method Position [v ^java.io.Writer w]
+  (.write w "[")
+  (print-method (position-row v) w)
+  (.write w ",")
+  (print-method (position-column v) w)
+  (.write w "]"))
+
 (defn copy-position
   [pos]
   (Position. (position-row pos)
