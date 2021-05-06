@@ -1,4 +1,4 @@
-(defproject ephemerol "0.5.0-SNAPSHOT"
+(defproject ephemerol "0.5.0"
   :description "Ephemerol: Scanner generator"
   :url "http://github.com/active-group/ephemerol"
   :license {:name "Eclipse Public License"
